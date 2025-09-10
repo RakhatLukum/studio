@@ -1,5 +1,6 @@
 "use client";
 
+import type { User } from 'firebase/auth';
 import { Copy, Download, Save, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,9 +16,10 @@ type TailorResultProps = {
   result: TailorResumeOutput | null;
   loading: boolean;
   onSave: () => void;
+  user: User | null;
 };
 
-export default function TailorResult({ result, loading, onSave }: TailorResultProps) {
+export default function TailorResult({ result, loading, onSave, user }: TailorResultProps) {
   const { toast } = useToast();
 
   const handleCopy = () => {
@@ -118,7 +120,7 @@ export default function TailorResult({ result, loading, onSave }: TailorResultPr
                 <Button onClick={handleDownload} variant="secondary" className="flex-1">
                   <Download className="mr-2 h-4 w-4" /> Download
                 </Button>
-                <Button onClick={onSave} variant="outline" className="flex-1">
+                <Button onClick={onSave} variant="outline" className="flex-1" disabled={!user}>
                   <Save className="mr-2 h-4 w-4" /> Save to History
                 </Button>
               </div>

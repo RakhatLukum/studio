@@ -16,7 +16,7 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TailorResumeOutput | null>(null);
   const [formValues, setFormValues] = useState<{ resumeText: string; jobDescription: string; language: 'en' | 'ru' | 'kz' } | null>(null);
@@ -46,7 +46,15 @@ export default function Home() {
   };
 
   const handleSaveToHistory = async () => {
-    if (!user || !result || !formValues) return;
+    if (!user) {
+        toast({
+            title: 'Sign in Required',
+            description: 'You must be signed in to save your results to history.',
+            variant: 'destructive',
+        });
+        return;
+    }
+    if (!result || !formValues) return;
 
     try {
       const runData: Omit<Run, 'id' | 'createdAt'> = {
@@ -79,34 +87,18 @@ export default function Home() {
     }
   };
 
-  const renderContent = (user: User | null) => {
-    if (!user) {
-      return (
-        <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">Welcome to AI Resume Tailor</h1>
-          <p className="mt-6 text-lg leading-8 text-muted-foreground">
-            Please sign in to tailor your resume and boost your job applications.
-          </p>
-        </div>
-      );
-    }
-    return (
-      <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <ResumeForm onSubmit={handleTailor} loading={loading} />
-        <TailorResult result={result} loading={loading} onSave={handleSaveToHistory} />
-      </div>
-    );
-  };
-
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12">
-      {authLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Sparkles className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">Welcome to AI Resume Tailor</h1>
+            <p className="mt-6 text-lg leading-8 text-muted-foreground">
+                Get started by pasting your resume and a job description below.
+            </p>
         </div>
-      ) : (
-        renderContent(user)
-      )}
+        <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <ResumeForm onSubmit={handleTailor} loading={loading} />
+            <TailorResult result={result} loading={loading} onSave={handleSaveToHistory} user={user} />
+        </div>
     </div>
   );
 }
