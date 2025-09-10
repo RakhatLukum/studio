@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'ResumeCraft AI',
+  title: 'AI Resume Tailor',
   description: 'Tailor your resume to any job description with AI.',
 };
 

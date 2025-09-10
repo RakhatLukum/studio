@@ -11,6 +11,7 @@ export interface Run {
   changeLog: string[];
   matchScore: number;
   scoreRationale: string;
+  promptVersion?: string;
   createdAt: Timestamp;
 }
 

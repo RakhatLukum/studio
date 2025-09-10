@@ -58,6 +58,7 @@ export default function Home() {
         changeLog: result.changeLog,
         matchScore: result.matchScore,
         scoreRationale: result.scoreRationale,
+        promptVersion: 'default',
       };
 
       await addDoc(collection(db, 'runs'), {
@@ -82,7 +83,7 @@ export default function Home() {
     if (!user) {
       return (
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">Welcome to ResumeCraft AI</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">Welcome to AI Resume Tailor</h1>
           <p className="mt-6 text-lg leading-8 text-muted-foreground">
             Please sign in to tailor your resume and boost your job applications.
           </p>

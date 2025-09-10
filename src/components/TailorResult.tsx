@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Save, Sparkles } from 'lucide-react';
+import { Copy, Download, Save, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import type { TailorResumeOutput } from '@/ai/flows/tailor-resume-to-job-description';
+import { generateDocx } from '@/lib/docx-generator';
 import MarkdownPreview from './MarkdownPreview';
 
 type TailorResultProps = {
@@ -25,6 +26,16 @@ export default function TailorResult({ result, loading, onSave }: TailorResultPr
       toast({
         title: 'Copied to clipboard!',
         description: 'The tailored resume has been copied.',
+      });
+    }
+  };
+
+  const handleDownload = () => {
+    if (result?.tailoredMd) {
+      generateDocx(result.tailoredMd);
+      toast({
+        title: 'Downloading...',
+        description: 'Your DOCX file is being generated.',
       });
     }
   };
@@ -49,10 +60,16 @@ export default function TailorResult({ result, loading, onSave }: TailorResultPr
     </div>
   );
 
-  const scoreColor = (score: number) => {
-    if (score > 75) return 'bg-green-500';
-    if (score > 50) return 'bg-yellow-500';
-    return 'bg-red-500';
+  const scoreTextColor = (score: number) => {
+    if (score > 75) return 'text-primary';
+    if (score > 50) return 'text-accent';
+    return 'text-destructive';
+  }
+
+  const progressColor = (score: number) => {
+    if (score > 75) return '[&>div]:bg-primary';
+    if (score > 50) return '[&>div]:bg-accent';
+    return '[&>div]:bg-destructive';
   }
 
   return (
@@ -68,9 +85,9 @@ export default function TailorResult({ result, loading, onSave }: TailorResultPr
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-lg font-semibold">Match Score</h3>
-                  <span className={`text-xl font-bold ${scoreColor(result.matchScore).replace('bg-','text-')}`}>{Math.round(result.matchScore)}%</span>
+                  <span className={`text-xl font-bold ${scoreTextColor(result.matchScore)}`}>{Math.round(result.matchScore)}%</span>
                 </div>
-                <Progress value={result.matchScore} className="h-3 [&>div]:bg-primary" />
+                <Progress value={result.matchScore} className={`h-3 ${progressColor(result.matchScore)}`} />
               </div>
 
               <Tabs defaultValue="resume" className="w-full">
@@ -94,9 +111,12 @@ export default function TailorResult({ result, loading, onSave }: TailorResultPr
                 </TabsContent>
               </Tabs>
               
-              <div className="flex gap-4 pt-4">
-                <Button onClick={handleCopy} className="flex-1">
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Button onClick={handleCopy} variant="secondary" className="flex-1">
                   <Copy className="mr-2 h-4 w-4" /> Copy
+                </Button>
+                <Button onClick={handleDownload} variant="secondary" className="flex-1">
+                  <Download className="mr-2 h-4 w-4" /> Download
                 </Button>
                 <Button onClick={onSave} variant="outline" className="flex-1">
                   <Save className="mr-2 h-4 w-4" /> Save to History

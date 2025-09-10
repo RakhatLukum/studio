@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
@@ -28,7 +28,7 @@ export default function HistoryList() {
         setLoading(true);
         try {
           const runsRef = collection(db, 'runs');
-          const q = query(runsRef, where('uid', '==', user.uid), orderBy('createdAt', 'desc'));
+          const q = query(runsRef, where('uid', '==', user.uid), orderBy('createdAt', 'desc'), limit(20));
           const querySnapshot = await getDocs(q);
           const userRuns = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Run));
           setRuns(userRuns);
@@ -68,9 +68,9 @@ export default function HistoryList() {
   }
   
   const scoreColor = (score: number) => {
-    if (score > 75) return 'bg-green-100 text-green-800 border-green-200';
-    if (score > 50) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    return 'bg-red-100 text-red-800 border-red-200';
+    if (score > 75) return 'bg-primary/10 text-primary border-primary/20';
+    if (score > 50) return 'bg-accent/10 text-accent border-accent/20';
+    return 'bg-destructive/10 text-destructive border-destructive/20';
   }
 
   return (
