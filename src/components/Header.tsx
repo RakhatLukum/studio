@@ -16,16 +16,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Header() {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const handleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in with Google', error);
+      if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
+        toast({
+          title: 'Sign-in Error',
+          description: 'Google Sign-In is not enabled for this project. Please enable it in the Firebase console.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Sign-in Error',
+          description: 'An unexpected error occurred during sign-in. Please try again.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
