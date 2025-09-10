@@ -48,7 +48,7 @@ const prompt = ai.definePrompt({
   input: {schema: TailorResumeInputSchema},
   output: {schema: TailorResumeOutputSchema},
   prompt: `You are an expert career coach and technical editor.
-Task: Rewrite the user's resume to best match the target job description.
+Task: Rewrite the user\'s resume to best match the target job description.
 Constraints:
 - Keep truthful: do NOT fabricate experience, dates, or employers.
 - Emphasize relevant hard skills, tools, and impact (metrics if present).

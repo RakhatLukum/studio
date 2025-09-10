@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export interface Run {
@@ -10,5 +11,13 @@ export interface Run {
   changeLog: string[];
   matchScore: number;
   scoreRationale: string;
+  createdAt: Timestamp;
+}
+
+export interface PromptVersion {
+  id: string;
+  uid: string;
+  systemPrompt: string;
+  versionLabel: string;
   createdAt: Timestamp;
 }

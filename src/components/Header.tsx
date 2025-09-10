@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from 'next/link';
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { FileText, History, LogIn, LogOut, Sparkles } from 'lucide-react';
+import { LogIn, LogOut, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,9 @@ export default function Header() {
               </Link>
               <Link href="/history" className="transition-colors hover:text-foreground/80 text-foreground/60">
                 History
+              </Link>
+              <Link href="/prompt-lab" className="transition-colors hover:text-foreground/80 text-foreground/60">
+                Prompt Lab
               </Link>
             </>
           )}
