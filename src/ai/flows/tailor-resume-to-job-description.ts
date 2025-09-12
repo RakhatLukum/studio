@@ -25,7 +25,7 @@ const TailorResumeOutputSchema = z.object({
   tailoredMd: z
     .string()
     .describe(
-      'The tailored resume in Markdown format, with sections: Summary, Skills, Experience, Projects, Education.'
+      'The tailored resume in Markdown format, with sections: Contact Information, Summary, Skills, Experience, Projects, Education.'
     ),
   changeLog: z.array(z.string()).describe('A bulleted list of what changed in the resume and why.'),
   matchScore: z
@@ -50,13 +50,14 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert career coach and technical editor.
 Task: Rewrite the user\'s resume to best match the target job description.
 Constraints:
+- Extract contact information (name, email, phone, links) and place it at the top.
 - Keep truthful: do NOT fabricate experience, dates, or employers.
 - Emphasize relevant hard skills, tools, and impact (metrics if present).
 - Remove or downplay irrelevant content.
 - Adjust tone for recruiters: concise, bullet-based, action verbs.
 Output strictly as JSON with these fields:
 {
-  "tailored_md": "... (Markdown resume with sections: Summary, Skills, Experience, Projects, Education) ...",
+  "tailored_md": "... (Markdown resume with sections: Contact Information, Summary, Skills, Experience, Projects, Education) ...",
   "change_log": ["...bulleted list of what changed and why..."],
   "match_score": 0-100,
   "score_rationale": "2-4 sentences on strengths/gaps"
