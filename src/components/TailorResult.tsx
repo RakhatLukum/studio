@@ -1,7 +1,6 @@
 "use client";
 
-import type { User } from 'firebase/auth';
-import { Copy, Download, Save, Sparkles } from 'lucide-react';
+import { Copy, Download, Sparkles } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -22,11 +21,9 @@ import {
 type TailorResultProps = {
   result: TailorResumeOutput | null;
   loading: boolean;
-  onSave: () => void;
-  user: User | null;
 };
 
-export default function TailorResult({ result, loading, onSave, user }: TailorResultProps) {
+export default function TailorResult({ result, loading }: TailorResultProps) {
   const { toast } = useToast();
 
   const handleCopy = () => {
@@ -150,7 +147,7 @@ export default function TailorResult({ result, loading, onSave, user }: TailorRe
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Your Tailored Resume</CardTitle>
-        <CardDescription>Here are the results. Review, copy, or save to your history.</CardDescription>
+        <CardDescription>Here are the results. Review, copy, or download your new resume.</CardDescription>
       </CardHeader>
       <CardContent className="min-h-[600px]">
         {loading ? <ResultSkeleton /> : (
@@ -204,9 +201,6 @@ export default function TailorResult({ result, loading, onSave, user }: TailorRe
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button onClick={onSave} variant="outline" className="flex-1" disabled={!user}>
-                  <Save className="mr-2 h-4 w-4" /> Save to History
-                </Button>
               </div>
             </div>
           ) : (
