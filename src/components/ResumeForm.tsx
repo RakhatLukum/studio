@@ -12,6 +12,10 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type React from 'react';
 import { useToast } from '@/hooks/use-toast';
+import * as pdfjs from 'pdfjs-dist';
+
+// Set workerSrc for pdfjs
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const formSchema = z.object({
   resumeText: z.string().min(100, { message: 'Resume must be at least 100 characters.' }),
@@ -35,24 +39,60 @@ export default function ResumeForm({ onSubmit, loading }: ResumeFormProps) {
     },
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (file.type === 'text/plain' && file.size <= 10000) { // 10KB limit
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const text = e.target?.result as string;
-          form.setValue('resumeText', text);
-        };
-        reader.readAsText(file);
-      } else {
-        toast({
-          title: "Invalid File",
-          description: "Please upload a .txt file smaller than 10KB.",
-          variant: "destructive"
-        })
-      }
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      toast({
+        title: "File Too Large",
+        description: "Please upload a file smaller than 2MB.",
+        variant: "destructive"
+      });
+      event.target.value = '';
+      return;
     }
+
+    if (file.type === 'application/pdf') {
+      try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          if (e.target?.result) {
+            const typedArray = new Uint8Array(e.target.result as ArrayBuffer);
+            const pdf = await pdfjs.getDocument(typedArray).promise;
+            let text = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              text += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
+            }
+            form.setValue('resumeText', text);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      } catch (error) {
+        console.error("Error parsing PDF:", error);
+        toast({
+          title: "PDF Parsing Error",
+          description: "Could not read text from the PDF. Please try a different file.",
+          variant: "destructive"
+        });
+      }
+    } else if (file.type === 'text/plain') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        form.setValue('resumeText', text);
+      };
+      reader.readAsText(file);
+    } else {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload a .pdf or .txt file.",
+        variant: "destructive"
+      });
+    }
+
     event.target.value = ''; // Reset file input
   };
 
@@ -75,8 +115,8 @@ export default function ResumeForm({ onSubmit, loading }: ResumeFormProps) {
                     <Button asChild variant="outline" size="sm">
                       <Label>
                         <Upload className="mr-2 h-4 w-4" />
-                        Upload .txt
-                        <input type="file" accept=".txt" className="sr-only" onChange={handleFileChange} />
+                        Upload .txt or .pdf
+                        <input type="file" accept=".txt,.pdf" className="sr-only" onChange={handleFileChange} />
                       </Label>
                     </Button>
                   </div>

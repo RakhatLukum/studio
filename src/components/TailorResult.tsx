@@ -2,6 +2,7 @@
 
 import type { User } from 'firebase/auth';
 import { Copy, Download, Save, Sparkles } from 'lucide-react';
+import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -11,6 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import type { TailorResumeOutput } from '@/ai/flows/tailor-resume-to-job-description';
 import { generateDocx } from '@/lib/docx-generator';
 import MarkdownPreview from './MarkdownPreview';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type TailorResultProps = {
   result: TailorResumeOutput | null;
@@ -32,12 +39,77 @@ export default function TailorResult({ result, loading, onSave, user }: TailorRe
     }
   };
 
-  const handleDownload = () => {
+  const generatePdf = (markdownContent: string) => {
+    const doc = new jsPDF();
+    const lines = markdownContent.split('\n');
+    let y = 15;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 10;
+
+    const checkPageBreak = (spaceNeeded: number) => {
+        if (y + spaceNeeded > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+        }
+    }
+
+    for (const line of lines) {
+        if (y > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+        }
+
+        if (line.startsWith('# ')) {
+            checkPageBreak(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(22);
+            doc.text(line.substring(2), margin, y);
+            y += 12;
+        } else if (line.startsWith('## ')) {
+            checkPageBreak(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text(line.substring(3), margin, y);
+            y += 10;
+        } else if (line.startsWith('- ')) {
+            checkPageBreak(7);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            const text = `• ${line.substring(2)}`;
+            const splitText = doc.splitTextToSize(text, doc.internal.pageSize.width - margin * 2 - 5);
+            doc.text(splitText, margin + 5, y);
+            y += (splitText.length * 7);
+        } else if (line.trim() === '') {
+            y += 5;
+        } else {
+            checkPageBreak(7);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            const splitText = doc.splitTextToSize(line, doc.internal.pageSize.width - margin * 2);
+            doc.text(splitText, margin, y);
+            y += (splitText.length * 7);
+        }
+    }
+    return doc;
+  };
+
+  const handleDownloadDocx = () => {
     if (result?.tailoredMd) {
       generateDocx(result.tailoredMd);
       toast({
-        title: 'Downloading...',
+        title: 'Downloading DOCX...',
         description: 'Your DOCX file is being generated.',
+      });
+    }
+  };
+  
+  const handleDownloadPdf = () => {
+    if (result?.tailoredMd) {
+      const pdf = generatePdf(result.tailoredMd);
+      pdf.save("tailored-resume.pdf");
+      toast({
+        title: 'Downloading PDF...',
+        description: 'Your PDF file is being generated.',
       });
     }
   };
@@ -117,9 +189,21 @@ export default function TailorResult({ result, loading, onSave, user }: TailorRe
                 <Button onClick={handleCopy} variant="secondary" className="flex-1">
                   <Copy className="mr-2 h-4 w-4" /> Copy
                 </Button>
-                <Button onClick={handleDownload} variant="secondary" className="flex-1">
-                  <Download className="mr-2 h-4 w-4" /> Download
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" className="flex-1">
+                      <Download className="mr-2 h-4 w-4" /> Download
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56">
+                    <DropdownMenuItem onClick={handleDownloadDocx}>
+                      Download as DOCX
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDownloadPdf}>
+                      Download as PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button onClick={onSave} variant="outline" className="flex-1" disabled={!user}>
                   <Save className="mr-2 h-4 w-4" /> Save to History
                 </Button>
