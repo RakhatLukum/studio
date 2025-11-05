@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
-import { doc, collection, serverTimestamp } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 import type { TailorResumeOutput } from '@/ai/flows/tailor-resume-to-job-description';
 import { tailorResume } from '@/ai/flows/tailor-resume-to-job-description';
@@ -32,13 +32,14 @@ export default function Home() {
       setResult(tailoredResult);
 
       if (user && firestore) {
-        const runsRef = collection(firestore, 'users', user.uid, 'tailoredResumes');
-        addDocumentNonBlocking(runsRef, {
+        const historyRef = collection(firestore, 'users', user.uid, 'history');
+        addDocumentNonBlocking(historyRef, {
+          type: 'resume',
           userId: user.uid,
           resumeOriginal: values.resumeText,
           jobDescription: values.jobDescription,
           language: values.language,
-          tailoredMd: tailoredResult.tailoredMd,
+          tailoredResumeMd: tailoredResult.tailoredMd,
           changeLog: tailoredResult.changeLog,
           matchScore: tailoredResult.matchScore,
           scoreRationale: tailoredResult.scoreRationale,

@@ -1,5 +1,5 @@
 
-import type { FieldValue } from 'firebase/firestore';
+import type { FieldValue, Timestamp } from 'firebase/firestore';
 
 export interface User {
   id: string;
@@ -21,10 +21,41 @@ export interface TailoredResume {
   createdAt: string; // ISO String
 }
 
-export interface Prompt {
-  id: string;
-  versionLabel: string;
-  promptText: string;
-  createdAt: FieldValue;
-  uid?: string; // Add uid for ownership
+export interface CareerRecommendation {
+    id: string;
+    userId: string;
+    interests: string;
+    recommendations: {
+        careerName: string;
+        rationale: string;
+    }[];
+    createdAt: FieldValue | Timestamp;
 }
+
+export interface DevelopmentPlan {
+    id: string;
+    userId: string;
+    careerName: string;
+    developmentPlanMd: string;
+    createdAt: FieldValue | Timestamp;
+}
+
+export interface InterviewSession {
+    id: string;
+    userId: string;
+    jobRole: string;
+    chatHistory: {
+        role: 'user' | 'assistant' | 'feedback';
+        content: string;
+    }[];
+    summary: string;
+    createdAt: FieldValue | Timestamp;
+}
+
+// Union type for all history items
+export type HistoryItem = (
+    | ({ type: 'resume' } & TailoredResume)
+    | ({ type: 'career' } & CareerRecommendation)
+    | ({ type: 'plan' } & DevelopmentPlan)
+    | ({ type: 'interview' } & InterviewSession)
+) & { createdAt: any }; // Ensure createdAt is available on all for sorting

@@ -22,6 +22,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { generateDocx } from '@/lib/docx-generator';
 import jsPDF from 'jspdf';
+import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 
 export default function CareerAdvisorPage() {
@@ -39,6 +41,8 @@ export default function CareerAdvisorPage() {
   const [isDialogOpen, setIsDialogOpen] = useState({ plan: false, opportunities: false });
 
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +51,18 @@ export default function CareerAdvisorPage() {
     try {
       const careerResult = await recommendCareers({ interests });
       setResult(careerResult);
+
+      if (user && firestore) {
+        const historyRef = collection(firestore, 'users', user.uid, 'history');
+        addDocumentNonBlocking(historyRef, {
+            type: 'career',
+            userId: user.uid,
+            interests,
+            recommendations: careerResult.recommendations,
+            createdAt: serverTimestamp(),
+        });
+      }
+
     } catch (error) {
       console.error('Error recommending careers:', error);
       toast({
@@ -67,6 +83,17 @@ export default function CareerAdvisorPage() {
     try {
         const planResult = await createDevelopmentPlan({ careerName });
         setPlan(planResult);
+
+        if (user && firestore) {
+            const historyRef = collection(firestore, 'users', user.uid, 'history');
+            addDocumentNonBlocking(historyRef, {
+                type: 'plan',
+                userId: user.uid,
+                careerName,
+                developmentPlanMd: planResult.developmentPlanMd,
+                createdAt: serverTimestamp(),
+            });
+        }
     } catch (error) {
         console.error('Error creating development plan:', error);
         toast({
@@ -376,5 +403,3 @@ export default function CareerAdvisorPage() {
     </div>
   );
 }
-
-    

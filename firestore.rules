@@ -33,42 +33,15 @@ service cloud.firestore {
       
       // DELETE: A user can only delete their own document.
       allow delete: if isOwner(userId);
-    }
 
-    // TAILORED RESUMES
-    // Path: /users/{userId}/tailoredResumes/{tailoredResumeId}
-    // Schema: TailoredResume
-    match /users/{userId}/tailoredResumes/{tailoredResumeId} {
-      // READ, LIST: A user can only read and list their own tailored resumes.
-      allow get, list: if isOwner(userId);
-      
-      // CREATE: A user can only create a tailored resume under their own user document.
-      // The incoming document's userId must match the user's UID.
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      
-      // UPDATE: A user can only update their own resume.
-      // The userId field must remain unchanged.
-      allow update: if isOwner(userId) && request.resource.data.userId == resource.data.userId;
-      
-      // DELETE: A user can only delete their own resume.
-      allow delete: if isOwner(userId);
-    }
+      // HISTORY subcollection
+      match /history/{historyId} {
+         // READ, LIST, CREATE: A user can only manage their own history.
+        allow get, list, create: if isOwner(userId);
 
-    // PROMPTS
-    // Path: /prompts/{promptId}
-    // Schema: Prompt
-    match /prompts/{promptId} {
-      // A user can read a prompt if they are the owner.
-      allow get: if isSignedIn() && resource.data.uid == request.auth.uid;
-      
-      // A user can list prompts they own. The client query must filter by uid.
-      allow list: if isSignedIn() && request.query.where.uid == request.auth.uid;
-      
-      // A user can create a prompt, and they must be the owner.
-      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
-      
-      // UPDATE, DELETE: Disallow updating/deleting prompts for simplicity.
-      allow update, delete: if false;
+        // UPDATE, DELETE: Disallow for simplicity
+        allow update, delete: if false;
+      }
     }
   }
 }

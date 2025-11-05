@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -5,10 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { practiceInterview, type PracticeInterviewOutput } from '@/ai/flows/practice-interview-flow';
-import { Loader2, Send, Bot, Lightbulb, User } from 'lucide-react';
+import { practiceInterview } from '@/ai/flows/practice-interview-flow';
+import { summarizeInterview } from '@/ai/flows/summarize-interview-flow';
+import { Loader2, Send, Bot, Lightbulb, User, Save } from 'lucide-react';
 import MarkdownPreview from '@/components/MarkdownPreview';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 type Message = {
   role: 'user' | 'assistant' | 'feedback';
@@ -21,7 +25,11 @@ export default function InterviewPrepPage() {
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [history, setHistory] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isInterviewStarted, setIsInterviewStarted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
 
   const handleStartInterview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +48,7 @@ export default function InterviewPrepPage() {
       const result = await practiceInterview({ jobRole, question: 'START', answer: '' });
       setCurrentQuestion(result.nextQuestion);
       setHistory([{ role: 'assistant', content: result.nextQuestion }]);
+      setIsInterviewStarted(true);
     } catch (error) {
       console.error('Error starting interview:', error);
       toast({
@@ -89,6 +98,41 @@ export default function InterviewPrepPage() {
     }
   };
   
+  const handleSaveInterview = async () => {
+      if (!user || !firestore || history.length === 0) {
+          toast({ title: 'Cannot Save', description: 'You must be logged in and have an active interview.', variant: 'destructive'});
+          return;
+      }
+      setIsSaving(true);
+      try {
+        const { summary } = await summarizeInterview({ jobRole, chatHistory: JSON.stringify(history) });
+        
+        const historyRef = collection(firestore, 'users', user.uid, 'history');
+        await addDocumentNonBlocking(historyRef, {
+            type: 'interview',
+            userId: user.uid,
+            jobRole,
+            chatHistory: history,
+            summary,
+            createdAt: serverTimestamp(),
+        });
+
+        toast({ title: 'Interview Saved', description: 'Your interview session has been saved to your history.'});
+        
+        // Reset state
+        setHistory([]);
+        setCurrentQuestion('');
+        setJobRole('');
+        setIsInterviewStarted(false);
+
+      } catch (error) {
+          console.error('Error saving interview:', error);
+          toast({ title: 'Save Failed', description: 'Could not save the interview session.', variant: 'destructive' });
+      } finally {
+          setIsSaving(false);
+      }
+  }
+
   const Skeleton = () => (
     <div className="flex items-start gap-4">
       <div className="grid h-10 w-10 place-items-center rounded-full bg-muted">
@@ -111,7 +155,7 @@ export default function InterviewPrepPage() {
       </div>
 
       <div className="w-full max-w-3xl mx-auto">
-        {!currentQuestion && history.length === 0 && (
+        {!isInterviewStarted && (
           <Card>
             <CardHeader>
               <CardTitle>Start Your Mock Interview</CardTitle>
@@ -126,20 +170,27 @@ export default function InterviewPrepPage() {
                   disabled={loading}
                 />
                 <Button type="submit" disabled={loading || !jobRole}>
-                  {loading && <Loader2 className="animate-spin" />}
-                  {!loading && "Start"}
+                  {loading ? <Loader2 className="animate-spin" /> : "Start"}
                 </Button>
               </form>
             </CardContent>
           </Card>
         )}
 
-        {history.length > 0 && (
+        {isInterviewStarted && (
           <div className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Mock Interview: {jobRole}</CardTitle>
-                <CardDescription>Answer the questions below.</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Mock Interview: {jobRole}</CardTitle>
+                  <CardDescription>Answer the questions below.</CardDescription>
+                </div>
+                {user && (
+                    <Button variant="outline" size="sm" onClick={handleSaveInterview} disabled={isSaving || loading}>
+                        {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
+                        Save & End
+                    </Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-6 max-h-[50vh] overflow-y-auto p-4">
                 {history.map((msg, index) => (

@@ -51,9 +51,6 @@ export default function Header() {
                 <Link href="/history" className="transition-colors hover:text-foreground/80 text-foreground/60">
                     History
                 </Link>
-                <Link href="/prompt-lab" className="transition-colors hover:text-foreground/80 text-foreground/60">
-                    Prompt Lab
-                </Link>
               </>
             )}
         </nav>
