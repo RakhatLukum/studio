@@ -38,16 +38,16 @@ export default function Header() {
         </div>
         <nav className="flex items-center gap-4 text-sm lg:gap-6 flex-1">
             <Link href="/" className="transition-colors hover:text-foreground/80 text-foreground/60">
-                Tailor
+                Career Advisor
             </Link>
             <Link href="/cv-builder" className="transition-colors hover:text-foreground/80 text-foreground/60">
                 CV Builder
             </Link>
-            <Link href="/career-advisor" className="transition-colors hover:text-foreground/80 text-foreground/60">
-                Career Advisor
-            </Link>
             <Link href="/interview-prep" className="transition-colors hover:text-foreground/80 text-foreground/60">
                 Interview Prep
+            </Link>
+            <Link href="/tailor" className="transition-colors hover:text-foreground/80 text-foreground/60">
+                Tailor
             </Link>
             {user && !user.isAnonymous && (
               <>
@@ -100,3 +100,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
