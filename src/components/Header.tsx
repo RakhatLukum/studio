@@ -18,6 +18,9 @@ export default function Header() {
             <Link href="/" className="transition-colors hover:text-foreground/80 text-foreground">
                 Tailor
             </Link>
+            <Link href="/career-advisor" className="transition-colors hover:text-foreground/80 text-foreground/60">
+                Career Advisor
+            </Link>
         </nav>
       </div>
     </header>
