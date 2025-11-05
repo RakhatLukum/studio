@@ -6,13 +6,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { recommendCareers, type RecommendCareersOutput } from '@/ai/flows/recommend-careers-flow';
-import { Sparkles } from 'lucide-react';
+import { createDevelopmentPlan, type CreateDevelopmentPlanOutput } from '@/ai/flows/create-development-plan-flow';
+import { Sparkles, ClipboardList } from 'lucide-react';
 import MarkdownPreview from '@/components/MarkdownPreview';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function CareerAdvisorPage() {
   const [interests, setInterests] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RecommendCareersOutput | null>(null);
+  const [plan, setPlan] = useState<CreateDevelopmentPlanOutput | null>(null);
+  const [isPlanLoading, setIsPlanLoading] = useState(false);
+  const [selectedCareer, setSelectedCareer] = useState('');
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,11 +38,34 @@ export default function CareerAdvisorPage() {
       setResult(careerResult);
     } catch (error) {
       console.error('Error recommending careers:', error);
-      // You might want to use a toast here for better user feedback
+      toast({
+        title: 'An error occurred',
+        description: 'Failed to recommend careers. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
   };
+
+  const handleCreatePlan = async (careerName: string) => {
+    setIsPlanLoading(true);
+    setPlan(null);
+    setSelectedCareer(careerName);
+    try {
+        const planResult = await createDevelopmentPlan({ careerName });
+        setPlan(planResult);
+    } catch (error) {
+        console.error('Error creating development plan:', error);
+        toast({
+            title: 'An error occurred',
+            description: 'Failed to create a development plan. Please try again.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsPlanLoading(false);
+    }
+  }
 
   const ResultSkeleton = () => (
     <div className="space-y-4 mt-6">
@@ -43,6 +81,26 @@ export default function CareerAdvisorPage() {
       </div>
     </div>
   );
+
+  const PlanSkeleton = () => (
+    <div className="space-y-6">
+       <div className="space-y-2">
+        <div className="h-6 w-1/3 rounded-md bg-muted animate-pulse" />
+        <div className="h-4 w-full rounded-md bg-muted animate-pulse" />
+        <div className="h-4 w-5/6 rounded-md bg-muted animate-pulse" />
+      </div>
+       <div className="space-y-2">
+        <div className="h-6 w-1/3 rounded-md bg-muted animate-pulse" />
+        <div className="h-4 w-full rounded-md bg-muted animate-pulse" />
+        <div className="h-4 w-5/6 rounded-md bg-muted animate-pulse" />
+      </div>
+       <div className="space-y-2">
+        <div className="h-6 w-1/3 rounded-md bg-muted animate-pulse" />
+        <div className="h-4 w-full rounded-md bg-muted animate-pulse" />
+        <div className="h-4 w-5/6 rounded-md bg-muted animate-pulse" />
+      </div>
+    </div>
+  )
 
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12">
@@ -99,10 +157,33 @@ export default function CareerAdvisorPage() {
             {result && (
                 <div className="space-y-4">
                     {result.recommendations.map((rec, index) => (
-                        <div key={index}>
+                        <Card key={index} className="p-4">
                             <h3 className="font-bold text-lg text-primary">{rec.careerName}</h3>
-                            <MarkdownPreview content={rec.rationale} />
-                        </div>
+                            <div className="prose prose-sm max-w-none text-muted-foreground">
+                                <MarkdownPreview content={rec.rationale} />
+                            </div>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="secondary" size="sm" className="mt-4" onClick={() => handleCreatePlan(rec.careerName)}>
+                                        <ClipboardList className="mr-2 h-4 w-4" />
+                                        Create Development Plan
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[600px]">
+                                <DialogHeader>
+                                    <DialogTitle>3-Month Development Plan: {selectedCareer}</DialogTitle>
+                                    <DialogDescription>
+                                    A suggested plan to get you started.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="max-h-[60vh] overflow-y-auto p-1 pr-4">
+                                  {isPlanLoading ? <PlanSkeleton /> : (
+                                    plan && <MarkdownPreview content={plan.developmentPlanMd} />
+                                  )}
+                                </div>
+                                </DialogContent>
+                            </Dialog>
+                        </Card>
                     ))}
                 </div>
             )}
