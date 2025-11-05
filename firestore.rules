@@ -35,12 +35,10 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
 
       // HISTORY subcollection
+      // A user can read, list and create their own history items.
       match /history/{historyId} {
-         // READ, LIST, CREATE: A user can only manage their own history.
-        allow get, list, create: if isOwner(userId);
-
-        // UPDATE, DELETE: Disallow for simplicity
-        allow update, delete: if false;
+        allow read, list, create: if isOwner(userId);
+        allow update, delete: if false; // History is immutable
       }
     }
   }
