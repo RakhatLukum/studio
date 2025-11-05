@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -45,13 +46,12 @@ User's Answer: {{{answer}}}
 
 INSTRUCTIONS:
 1.  If the 'question' is "START", this is the beginning of the interview. Do not provide feedback. Generate a relevant opening question (e.g., "Tell me about yourself" or a question about their interest in the role).
-2.  If there is a user 'answer', provide constructive feedback. This feedback must analyze the answer for:
+2.  If there is a user 'answer', provide constructive feedback. This feedback must be in Markdown and analyze the answer for:
     - **Clarity and Conciseness:** Was the answer easy to understand?
     - **Relevance:** Did the answer directly address the question?
     - **Structure (STAR method):** Did the user effectively describe the Situation, Task, Action, and Result?
     - **Impact:** Did the user quantify their achievements?
-    - **Soft Skills:** Assess the tone for confidence and professionalism.
-    Your feedback should be in Markdown format, with bullet points for each area of analysis.
+    - **Soft Skills Analysis:** Assess the tone for confidence, professionalism, and enthusiasm. Provide specific examples from their answer.
 3.  After providing feedback (or if it's the first question), generate the *next* logical interview question. The questions should follow a natural interview progression.
 4.  Do not repeat questions that are already in the chat history.
 
