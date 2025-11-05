@@ -41,7 +41,7 @@ The plan should be structured in Markdown format with the following sections for
 For each month, include:
 - **Key Skills:** A bulleted list of 3-4 essential skills to focus on.
 - **Project Idea:** A simple, practical project idea to apply the learned skills.
-- **Google Resources:** A bulleted list of 1-2 highly relevant courses, certificates, or learning materials from Google (e.g., Google Career Certificates on Coursera, Google Skillshop, Google Codelabs).
+- **Google Resources:** A bulleted list of 1-2 highly relevant courses, certificates, or learning materials from Google. You MUST include a valid, clickable markdown link (e.g., [Course Name](https://...)) for each resource (e.g., Google Career Certificates on Coursera, Google Skillshop, Google Codelabs).
 
 Keep the descriptions brief and to the point. The output must be a single Markdown string.
 

@@ -1,6 +1,43 @@
 import React from 'react';
 
 const MarkdownPreview = ({ content }: { content: string }) => {
+  // Regex to find markdown links: [text](url)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+  const renderLine = (line: string) => {
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(line)) !== null) {
+      // Add text before the link
+      if (match.index > lastIndex) {
+        parts.push(line.substring(lastIndex, match.index));
+      }
+      // Add the link
+      const [fullMatch, text, url] = match;
+      parts.push(
+        <a
+          key={url + text}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline hover:text-primary/80"
+        >
+          {text}
+        </a>
+      );
+      lastIndex = match.index + fullMatch.length;
+    }
+
+    // Add any remaining text after the last link
+    if (lastIndex < line.length) {
+      parts.push(line.substring(lastIndex));
+    }
+    
+    return parts.length > 0 ? <>{parts}</> : line;
+  };
+  
   return (
     <div className="space-y-2 text-sm">
       {content.split('\n').map((line, i) => {
@@ -13,16 +50,16 @@ const MarkdownPreview = ({ content }: { content: string }) => {
         if (line.startsWith('**')) {
             const boldEnd = line.indexOf('**', 2);
             if (boldEnd !== -1) {
-                return <p key={i}><strong className="font-semibold">{line.substring(2, boldEnd)}</strong>{line.substring(boldEnd + 2)}</p>
+                return <p key={i}><strong className="font-semibold">{line.substring(2, boldEnd)}</strong>{renderLine(line.substring(boldEnd + 2))}</p>
             }
         }
         if (line.startsWith('- ')) {
-          return <div key={i} className="flex items-start"><span className="mr-2 mt-1">&#8226;</span><p>{line.substring(2)}</p></div>
+          return <div key={i} className="flex items-start"><span className="mr-2 mt-1">&#8226;</span><p>{renderLine(line.substring(2))}</p></div>
         }
         if (line.trim() === '') {
             return <div key={i} className="h-3" />
         }
-        return <p key={i}>{line}</p>
+        return <p key={i}>{renderLine(line)}</p>
       })}
     </div>
   )
