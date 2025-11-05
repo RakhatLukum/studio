@@ -45,8 +45,9 @@ const findCompaniesTool = ai.defineTool(
     },
     async (input) => {
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-        if (!apiKey) {
+        if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
             console.error('Google Maps API Key is not configured.');
+            // Return a specific error message or empty opportunities
             return { opportunities: [] };
         }
 
@@ -84,7 +85,7 @@ const findCompaniesTool = ai.defineTool(
             const data = await response.json();
             
             const opportunities = (data.places || []).map((place: any) => ({
-                name: place.displayName,
+                name: place.displayName?.text || 'Unknown Company',
                 address: place.formattedAddress,
                 website: place.websiteUri,
                 rating: place.rating,
