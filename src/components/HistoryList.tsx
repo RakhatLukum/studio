@@ -16,14 +16,28 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import MarkdownPreview from './MarkdownPreview';
-import { Bot, Briefcase, ClipboardList, FileText, Lightbulb, User, FilePlus } from 'lucide-react';
+import { Bot, Briefcase, ClipboardList, FileText, Lightbulb, User, FilePlus, Download } from 'lucide-react';
+import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { generateDocx } from '@/lib/docx-generator';
+import jsPDF from 'jspdf';
 
 const formatDate = (date: Timestamp | string | Date) => {
     if (!date) return '';
     if (date instanceof Timestamp) {
         return formatDistanceToNow(date.toDate(), { addSuffix: true });
     }
-    return formatDistanceToNow(new Date(date), { addSuffix: true });
+    // Handle Firestore serverTimestamp which might be null initially
+    if (typeof date === 'object' && date !== null && 'toDate' in date) {
+        return formatDistanceToNow((date as Timestamp).toDate(), { addSuffix: true });
+    }
+    try {
+        const d = new Date(date as any);
+        if (isNaN(d.getTime())) return 'Just now'; // Fallback for invalid date
+        return formatDistanceToNow(d, { addSuffix: true });
+    } catch (e) {
+        return 'Just now';
+    }
 }
 
 const ResumeHistoryItem = ({ item }: { item: Extract<HistoryItem, { type: 'resume' }> }) => (
@@ -100,6 +114,102 @@ const InterviewHistoryItem = ({ item }: { item: Extract<HistoryItem, { type: 'in
     </>
 );
 
+const DownloadButtons = ({ content }: { content: string }) => {
+    const { toast } = useToast();
+
+    const generatePdf = (markdownContent: string) => {
+        const doc = new jsPDF();
+        const lines = markdownContent.split('\n');
+        let y = 15;
+        const pageHeight = doc.internal.pageSize.height;
+        const margin = 10;
+    
+        const checkPageBreak = (spaceNeeded: number) => {
+            if (y + spaceNeeded > pageHeight - margin) {
+                doc.addPage();
+                y = margin;
+            }
+        }
+    
+        for (const line of lines) {
+            if (y > pageHeight - margin) {
+                doc.addPage();
+                y = margin;
+            }
+    
+            if (line.startsWith('# ')) {
+                checkPageBreak(12);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(22);
+                doc.text(line.substring(2), margin, y);
+                y += 12;
+            } else if (line.startsWith('## ')) {
+                checkPageBreak(10);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(16);
+                doc.text(line.substring(3), margin, y);
+                y += 10;
+            } else if (line.startsWith('### ')) {
+                checkPageBreak(8);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(14);
+                doc.text(line.substring(4), margin, y);
+                y += 8;
+            } else if (line.startsWith('- ')) {
+                checkPageBreak(7);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(12);
+                const text = `• ${line.substring(2)}`;
+                const splitText = doc.splitTextToSize(text, doc.internal.pageSize.width - margin * 2 - 5);
+                doc.text(splitText, margin + 5, y);
+                y += (splitText.length * 7);
+            } else if (line.trim() === '') {
+                y += 5;
+            } else {
+                checkPageBreak(7);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(12);
+                const splitText = doc.splitTextToSize(line, doc.internal.pageSize.width - margin * 2);
+                doc.text(splitText, margin, y);
+                y += (splitText.length * 7);
+            }
+        }
+        return doc;
+    };
+      
+    const handleDownloadDocx = () => {
+        if (content) {
+          generateDocx(content);
+          toast({
+            title: 'Downloading DOCX...',
+            description: 'Your DOCX file is being generated.',
+          });
+        }
+    };
+      
+    const handleDownloadPdf = () => {
+        if (content) {
+          const pdf = generatePdf(content);
+          pdf.save("mansup-report.pdf");
+          toast({
+            title: 'Downloading PDF...',
+            description: 'Your PDF file is being generated.',
+          });
+        }
+    };
+
+    return (
+        <div className="flex gap-2 mt-4">
+            <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
+                <Download className="mr-2 h-4 w-4" /> DOCX
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+                <Download className="mr-2 h-4 w-4" /> PDF
+            </Button>
+        </div>
+    )
+}
+
 
 export default function HistoryList() {
   const { user } = useUser();
@@ -148,6 +258,7 @@ export default function HistoryList() {
                    <div className="p-4 border rounded-md bg-background max-h-96 overflow-y-auto">
                     <MarkdownPreview content={item.tailoredResumeMd} />
                    </div>
+                   <DownloadButtons content={item.tailoredResumeMd} />
                  </div>
                  <div>
                    <h4 className="font-semibold mb-2">Score Rationale</h4>
@@ -155,9 +266,12 @@ export default function HistoryList() {
                  </div>
                </div>;
         case 'created_resume':
-            return <div className="p-4 border rounded-md bg-background max-h-96 overflow-y-auto">
-                <MarkdownPreview content={item.generatedResumeMd} />
-            </div>;
+            return <>
+                <div className="p-4 border rounded-md bg-background max-h-96 overflow-y-auto">
+                    <MarkdownPreview content={item.generatedResumeMd} />
+                </div>
+                <DownloadButtons content={item.generatedResumeMd} />
+            </>;
         case 'career':
             return <div className="space-y-4">
                 {item.recommendations.map((rec, index) => (
@@ -170,9 +284,12 @@ export default function HistoryList() {
                 ))}
             </div>;
         case 'plan':
-            return <div className="p-4 border rounded-md bg-background max-h-96 overflow-y-auto">
-                <MarkdownPreview content={item.developmentPlanMd} />
-            </div>;
+            return <>
+                <div className="p-4 border rounded-md bg-background max-h-96 overflow-y-auto">
+                    <MarkdownPreview content={item.developmentPlanMd} />
+                </div>
+                <DownloadButtons content={item.developmentPlanMd} />
+            </>;
         case 'interview':
              return <div className="space-y-4">
                 <div>
@@ -180,6 +297,7 @@ export default function HistoryList() {
                    <div className="p-4 border rounded-md bg-background">
                         <MarkdownPreview content={item.summary} />
                    </div>
+                   <DownloadButtons content={item.summary} />
                 </div>
                 <div>
                     <h4 className="font-semibold mb-2">Full Transcript</h4>
