@@ -33,9 +33,9 @@ import {
 } from 'firebase/auth';
 import { LogIn, UserPlus, Ghost } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
-import { setDocumentNonBlocking } from '@/firebase';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { doc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -64,7 +64,7 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    if (user && !isUserLoading) {
+    if (user && !user.isAnonymous && !isUserLoading) {
       router.push('/');
     }
   }, [user, isUserLoading, router]);
@@ -101,14 +101,20 @@ export default function LoginPage() {
       console.error(error);
       let description = 'An unexpected error occurred. Please try again.';
       if (error instanceof FirebaseError) {
-        if (error.code === AuthErrorCodes.EMAIL_EXISTS) {
-          description =
-            'This email is already in use. Please sign in or use a different email.';
-        } else if (error.code === AuthErrorCodes.INVALID_LOGIN_CREDENTIALS) {
-          description =
-            'Invalid email or password. Please check your credentials and try again.';
-        } else if (error.code === AuthErrorCodes.WEAK_PASSWORD) {
-          description = 'The password is too weak. Please use at least 6 characters.';
+        switch (error.code) {
+          case AuthErrorCodes.EMAIL_EXISTS:
+            description = 'This email is already in use. Please sign in or use a different email.';
+            break;
+          case AuthErrorCodes.INVALID_LOGIN_CREDENTIALS:
+          case 'auth/invalid-credential': // Catches both new and old error codes
+            description = 'Invalid email or password. Please check your credentials and try again.';
+            break;
+          case AuthErrorCodes.WEAK_PASSWORD:
+            description = 'The password is too weak. Please use at least 6 characters.';
+            break;
+          default:
+            description = `An authentication error occurred. Please try again. (${error.code})`;
+            break;
         }
       }
       toast({
@@ -142,7 +148,7 @@ export default function LoginPage() {
     }
   };
 
-  if (isUserLoading || user) {
+  if (isUserLoading || (user && !user.isAnonymous)) {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 
