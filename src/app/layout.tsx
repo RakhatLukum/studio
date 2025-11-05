@@ -5,8 +5,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'AI Resume Tailor',
-  description: 'Tailor your resume to any job description with AI.',
+  title: 'MansUP',
+  description: 'Your AI-powered career development assistant.',
 };
 
 export default function RootLayout({

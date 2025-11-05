@@ -63,7 +63,7 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12">
         <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">Welcome to AI Resume Tailor</h1>
+            <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">Welcome to MansUP</h1>
             <p className="mt-6 text-lg leading-8 text-muted-foreground">
                 Get started by pasting your resume and a job description below.
             </p>

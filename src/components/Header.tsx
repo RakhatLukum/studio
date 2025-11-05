@@ -33,7 +33,7 @@ export default function Header() {
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-primary" />
-            <span className="font-bold">AI Resume Tailor</span>
+            <span className="font-bold">MansUP</span>
           </Link>
         </div>
         <nav className="flex items-center gap-4 text-sm lg:gap-6 flex-1">
@@ -100,5 +100,3 @@ export default function Header() {
     </header>
   );
 }
-
-    
