@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo } from 'react';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, Timestamp } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import type { HistoryItem } from '@/lib/types';
@@ -18,12 +18,20 @@ import { Badge } from '@/components/ui/badge';
 import MarkdownPreview from './MarkdownPreview';
 import { Bot, Briefcase, ClipboardList, FileText, Lightbulb, User, FilePlus } from 'lucide-react';
 
+const formatDate = (date: Timestamp | string | Date) => {
+    if (!date) return '';
+    if (date instanceof Timestamp) {
+        return formatDistanceToNow(date.toDate(), { addSuffix: true });
+    }
+    return formatDistanceToNow(new Date(date), { addSuffix: true });
+}
+
 const ResumeHistoryItem = ({ item }: { item: Extract<HistoryItem, { type: 'resume' }> }) => (
     <>
         <div className='flex-1'>
             <p className="font-semibold text-primary truncate">{item.jobDescription.split('\n')[0]}</p>
             <p className="text-sm text-muted-foreground mt-1">
-                {item.createdAt && formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                {formatDate(item.createdAt)}
             </p>
         </div>
         <div className="flex items-center gap-2">
@@ -39,7 +47,7 @@ const CreatedResumeHistoryItem = ({ item }: { item: Extract<HistoryItem, { type:
         <div className='flex-1'>
             <p className="font-semibold text-primary truncate">Created Resume: {item.formData.fullName}</p>
             <p className="text-sm text-muted-foreground mt-1">
-                {item.createdAt && formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                {formatDate(item.createdAt)}
             </p>
         </div>
         <div className="flex items-center gap-2">
@@ -215,5 +223,3 @@ export default function HistoryList() {
     </Accordion>
   );
 }
-
-    
