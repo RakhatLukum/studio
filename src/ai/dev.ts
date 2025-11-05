@@ -10,3 +10,4 @@ import '@/ai/flows/improve-resume-tailoring-prompt-flow.ts';
 import '@/ai/flows/resume-match-score-flow.ts';
 import '@/ai/flows/recommend-careers-flow.ts';
 import '@/ai/flows/create-development-plan-flow.ts';
+import '@/ai/flows/find-local-opportunities-flow.ts';
