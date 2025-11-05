@@ -8,17 +8,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { recommendCareers, type RecommendCareersOutput } from '@/ai/flows/recommend-careers-flow';
 import { createDevelopmentPlan, type CreateDevelopmentPlanOutput } from '@/ai/flows/create-development-plan-flow';
 import { findLocalOpportunities, type FindLocalOpportunitiesOutput } from '@/ai/flows/find-local-opportunities-flow';
-import { Sparkles, ClipboardList, MapPin, Loader2, Search } from 'lucide-react';
+import { Sparkles, ClipboardList, MapPin, Loader2, Search, Download } from 'lucide-react';
 import MarkdownPreview from '@/components/MarkdownPreview';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useToast } from '@/hooks/use-toast';
+import { generateDocx } from '@/lib/docx-generator';
+import jsPDF from 'jspdf';
 
 
 export default function CareerAdvisorPage() {
@@ -110,6 +113,81 @@ export default function CareerAdvisorPage() {
         setIsDialogOpen(prev => ({...prev, opportunities: false}));
     });
   }
+  
+  const generatePdf = (markdownContent: string) => {
+    const doc = new jsPDF();
+    const lines = markdownContent.split('\n');
+    let y = 15;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 10;
+
+    const checkPageBreak = (spaceNeeded: number) => {
+        if (y + spaceNeeded > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+        }
+    }
+
+    for (const line of lines) {
+        if (y > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+        }
+
+        if (line.startsWith('# ')) {
+            checkPageBreak(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(22);
+            doc.text(line.substring(2), margin, y);
+            y += 12;
+        } else if (line.startsWith('## ')) {
+            checkPageBreak(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text(line.substring(3), margin, y);
+            y += 10;
+        } else if (line.startsWith('- ')) {
+            checkPageBreak(7);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            const text = `• ${line.substring(2)}`;
+            const splitText = doc.splitTextToSize(text, doc.internal.pageSize.width - margin * 2 - 5);
+            doc.text(splitText, margin + 5, y);
+            y += (splitText.length * 7);
+        } else if (line.trim() === '') {
+            y += 5;
+        } else {
+            checkPageBreak(7);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            const splitText = doc.splitTextToSize(line, doc.internal.pageSize.width - margin * 2);
+            doc.text(splitText, margin, y);
+            y += (splitText.length * 7);
+        }
+    }
+    return doc;
+  };
+
+  const handleDownloadDocx = () => {
+    if (plan?.developmentPlanMd) {
+      generateDocx(plan.developmentPlanMd);
+      toast({
+        title: 'Downloading DOCX...',
+        description: 'Your DOCX file is being generated.',
+      });
+    }
+  };
+  
+  const handleDownloadPdf = () => {
+    if (plan?.developmentPlanMd) {
+      const pdf = generatePdf(plan.developmentPlanMd);
+      pdf.save("development-plan.pdf");
+      toast({
+        title: 'Downloading PDF...',
+        description: 'Your PDF file is being generated.',
+      });
+    }
+  };
 
   const ResultSkeleton = () => (
     <div className="space-y-4 mt-6">
@@ -239,6 +317,14 @@ export default function CareerAdvisorPage() {
                                       plan && <MarkdownPreview content={plan.developmentPlanMd} />
                                     )}
                                   </div>
+                                  <DialogFooter className="mt-4 gap-2">
+                                      <Button variant="outline" onClick={handleDownloadDocx} disabled={isPlanLoading || !plan}>
+                                          <Download className="mr-2 h-4 w-4" /> DOCX
+                                      </Button>
+                                      <Button variant="outline" onClick={handleDownloadPdf} disabled={isPlanLoading || !plan}>
+                                          <Download className="mr-2 h-4 w-4" /> PDF
+                                      </Button>
+                                  </DialogFooter>
                                   </DialogContent>
                               </Dialog>
                               
@@ -290,3 +376,5 @@ export default function CareerAdvisorPage() {
     </div>
   );
 }
+
+    
