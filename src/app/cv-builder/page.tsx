@@ -10,12 +10,20 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { PlusCircle, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import { PlusCircle, Trash2, Sparkles, Loader2, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { createResume, type CreateResumeOutput } from '@/ai/flows/create-resume-flow';
 import MarkdownPreview from '@/components/MarkdownPreview';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
+import jsPDF from 'jspdf';
+import { generateDocx } from '@/lib/docx-generator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const experienceSchema = z.object({
   jobTitle: z.string().min(1, "Job title is required"),
@@ -96,6 +104,7 @@ export default function CvBuilderPage() {
         skills: values.skills.split(',').map(s => s.trim()),
         experience: values.experience || [],
         education: values.education || [],
+        projects: values.projects || [],
       });
       setResult(resumeResult);
 
@@ -118,12 +127,93 @@ export default function CvBuilderPage() {
     }
   };
 
+  const generatePdf = (markdownContent: string) => {
+    const doc = new jsPDF();
+    const lines = markdownContent.split('\n');
+    let y = 15;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 10;
+
+    const checkPageBreak = (spaceNeeded: number) => {
+        if (y + spaceNeeded > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+        }
+    }
+
+    for (const line of lines) {
+        if (y > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+        }
+
+        if (line.startsWith('# ')) {
+            checkPageBreak(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(22);
+            doc.text(line.substring(2), margin, y);
+            y += 12;
+        } else if (line.startsWith('## ')) {
+            checkPageBreak(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text(line.substring(3), margin, y);
+            y += 10;
+        } else if (line.startsWith('### ')) {
+            checkPageBreak(8);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.text(line.substring(4), margin, y);
+            y += 8;
+        } else if (line.startsWith('- ')) {
+            checkPageBreak(7);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            const text = `• ${line.substring(2)}`;
+            const splitText = doc.splitTextToSize(text, doc.internal.pageSize.width - margin * 2 - 5);
+            doc.text(splitText, margin + 5, y);
+            y += (splitText.length * 7);
+        } else if (line.trim() === '') {
+            y += 5;
+        } else {
+            checkPageBreak(7);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            const splitText = doc.splitTextToSize(line, doc.internal.pageSize.width - margin * 2);
+            doc.text(splitText, margin, y);
+            y += (splitText.length * 7);
+        }
+    }
+    return doc;
+  };
+
+  const handleDownloadDocx = () => {
+    if (result?.generatedResumeMd) {
+      generateDocx(result.generatedResumeMd);
+      toast({
+        title: 'Downloading DOCX...',
+        description: 'Your DOCX file is being generated.',
+      });
+    }
+  };
+  
+  const handleDownloadPdf = () => {
+    if (result?.generatedResumeMd) {
+      const pdf = generatePdf(result.generatedResumeMd);
+      pdf.save("generated-resume.pdf");
+      toast({
+        title: 'Downloading PDF...',
+        description: 'Your PDF file is being generated.',
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">CV Builder</h1>
         <p className="mt-6 text-lg leading-8 text-muted-foreground">
-          Fill out the form below, and our AI will generate a professional resume for you.
+          Fill out the form below, and our AI will generate and enhance a professional resume for you.
         </p>
       </div>
 
@@ -186,7 +276,7 @@ export default function CvBuilderPage() {
                         <FormItem><FormLabel>Dates (e.g., Jan 2022 - Present)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name={`experience.${index}.description`} render={({ field }) => (
-                        <FormItem><FormLabel>Description / Achievements</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Description / Achievements (use bullet points)</FormLabel><FormControl><Textarea {...field} rows={4} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeExperience(index)}><Trash2 className="text-destructive" /></Button>
                     </div>
@@ -235,7 +325,7 @@ export default function CvBuilderPage() {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating CV</> : <><Sparkles className="mr-2 h-4 w-4" />Generate CV</>}
+                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating CV</> : <><Sparkles className="mr-2 h-4 w-4" />Generate & Enhance CV</>}
                 </Button>
               </form>
             </Form>
@@ -243,9 +333,28 @@ export default function CvBuilderPage() {
         </Card>
 
         <Card className="sticky top-24 h-fit">
-          <CardHeader>
-            <CardTitle>Generated Resume</CardTitle>
-            <CardDescription>Your AI-generated resume will appear here.</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+                <CardTitle>Generated Resume</CardTitle>
+                <CardDescription>Your AI-enhanced resume will appear here.</CardDescription>
+            </div>
+            {result && (
+                 <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Download className="mr-2 h-4 w-4" /> Download
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-40">
+                    <DropdownMenuItem onClick={handleDownloadDocx}>
+                      Download as DOCX
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDownloadPdf}>
+                      Download as PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+            )}
           </CardHeader>
           <CardContent className="min-h-[400px]">
             {loading && <div><Loader2 className="mx-auto my-12 h-10 w-10 animate-spin text-primary" /></div>}

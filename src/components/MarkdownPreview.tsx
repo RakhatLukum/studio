@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 const MarkdownPreview = ({ content }: { content: string }) => {
@@ -41,6 +42,9 @@ const MarkdownPreview = ({ content }: { content: string }) => {
   return (
     <div className="space-y-2 text-sm">
       {content.split('\n').map((line, i) => {
+        if (line.startsWith('### ')) {
+            return <h3 key={i} className="text-lg font-semibold mt-3">{line.substring(4)}</h3>
+        }
         if (line.startsWith('## ')) {
           return <h2 key={i} className="text-xl font-semibold mt-4 pb-1 border-b">{line.substring(3)}</h2>
         }

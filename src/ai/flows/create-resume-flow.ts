@@ -57,19 +57,21 @@ const prompt = ai.definePrompt({
   name: 'createResumePrompt',
   input: { schema: CreateResumeInputSchema },
   output: { schema: CreateResumeOutputSchema },
-  prompt: `You are an expert resume writer. Your task is to create a professional, well-formatted resume in Markdown based on the structured information provided by the user.
+  prompt: `You are an expert resume writer and career coach. Your task is to create a professional, well-formatted resume in Markdown based on the structured information provided by the user.
+
+In addition to formatting, you must **improve the content**. Rephrase the professional summary and experience descriptions to be more impactful. Use strong action verbs and quantify achievements where possible. Make the candidate sound as professional and competent as possible.
 
 Follow this structure precisely:
 1.  **Contact Information:** At the very top, list the Full Name as a main heading (#), followed by Email, Phone, and LinkedIn profile URL on separate lines.
-2.  **Summary:** A section titled "## Summary" containing the professional summary.
+2.  **Summary:** A section titled "## Summary" containing the rewritten, professional summary.
 3.  **Skills:** A section titled "## Skills" containing a comma-separated list of skills.
-4.  **Experience:** (Only if provided) A section titled "## Experience". For each job, create a sub-heading (###) with the Job Title and Company. On the next line, list the dates. Below that, use bullet points for each item in the description.
+4.  **Experience:** (Only if provided) A section titled "## Experience". For each job, create a sub-heading (###) with the Job Title and Company. On the next line, list the dates. Below that, use bullet points for the rewritten, achievement-oriented description.
 5.  **Education:** (Only if provided) A section titled "## Education". For each entry, create a sub-heading (###) with the Degree and School. On the next line, list the dates.
 6.  **Projects:** (Only if provided) A section titled "## Projects". For each project, create a sub-heading (###) with the Project Name. Below that, use bullet points for the description and include the URL if available.
 
 Ensure the final output is a single Markdown string.
 
-USER INFORMATION:
+USER INFORMATION (To be rewritten and formatted):
 - Full Name: {{{fullName}}}
 - Email: {{{email}}}
 - Phone: {{{phone}}}
@@ -96,7 +98,7 @@ USER INFORMATION:
     URL: {{{this.url}}}
 {{/each}}
 
-Generate the Markdown resume now.
+Generate the improved and formatted Markdown resume now.
 `,
 });
 
