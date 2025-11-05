@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import { Save } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase';
+import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -42,7 +41,8 @@ Output strictly as JSON with these fields:
 }`;
 
 export default function PromptLabForm({ onPromptSaved }: PromptLabFormProps) {
-  const { user } = useAuth();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -55,7 +55,7 @@ export default function PromptLabForm({ onPromptSaved }: PromptLabFormProps) {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         title: "Authentication Error",
         description: "You must be signed in to save a prompt.",
@@ -66,12 +66,14 @@ export default function PromptLabForm({ onPromptSaved }: PromptLabFormProps) {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, 'promptVersions'), {
-        uid: user.uid,
-        systemPrompt: values.systemPrompt,
+      const promptsRef = collection(firestore, 'prompts');
+      addDocumentNonBlocking(promptsRef, {
+        uid: user.uid, // For ownership
+        promptText: values.systemPrompt,
         versionLabel: values.versionLabel,
         createdAt: serverTimestamp(),
       });
+
       toast({
         title: "Prompt Saved",
         description: `Version "${values.versionLabel}" has been saved.`,

@@ -2,11 +2,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase';
-import type { PromptVersion } from '@/lib/types';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import type { Prompt } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -17,36 +16,20 @@ type PromptVersionListProps = {
 }
 
 export default function PromptVersionList({ key }: PromptVersionListProps) {
-  const { user } = useAuth();
-  const [versions, setVersions] = useState<PromptVersion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    if (user) {
-      const fetchVersions = async () => {
-        setLoading(true);
-        try {
-          const versionsRef = collection(db, 'promptVersions');
-          const q = query(
-            versionsRef,
-            where('uid', '==', user.uid),
-            orderBy('createdAt', 'desc'),
-            limit(3)
-          );
-          const querySnapshot = await getDocs(q);
-          const userVersions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PromptVersion));
-          setVersions(userVersions);
-        } catch (error) {
-          console.error("Error fetching prompt versions:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchVersions();
-    } else {
-        setLoading(false);
-    }
-  }, [user, key]);
+  const promptsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'prompts'),
+      where('uid', '==', user.uid),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
+  }, [firestore, user, key]);
+
+  const { data: versions, isLoading } = useCollection<Prompt>(promptsQuery);
   
   const ListSkeleton = () => (
       <div className="space-y-4">
@@ -61,12 +44,12 @@ export default function PromptVersionList({ key }: PromptVersionListProps) {
       </div>
   )
 
-  if (loading) {
+  if (isLoading) {
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Recent Versions</CardTitle>
-                <CardDescription>Your last 3 saved prompt versions.</CardDescription>
+                <CardDescription>Your last 5 saved prompt versions.</CardDescription>
             </CardHeader>
             <CardContent>
                 <ListSkeleton />
@@ -79,10 +62,10 @@ export default function PromptVersionList({ key }: PromptVersionListProps) {
     <Card>
       <CardHeader>
         <CardTitle>Recent Versions</CardTitle>
-        <CardDescription>Your last 3 saved prompt versions.</CardDescription>
+        <CardDescription>Your last 5 saved prompt versions.</CardDescription>
       </CardHeader>
       <CardContent>
-        {versions.length === 0 ? (
+        {!versions || versions.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-8">No prompt versions saved yet.</p>
         ) : (
           <Accordion type="single" collapsible className="w-full space-y-2">
@@ -92,13 +75,13 @@ export default function PromptVersionList({ key }: PromptVersionListProps) {
                     <div className='flex flex-col items-start text-left gap-1'>
                         <p className="font-semibold text-primary">{version.versionLabel}</p>
                         <p className="text-xs text-muted-foreground">
-                            {version.createdAt && formatDistanceToNow(version.createdAt.toDate(), { addSuffix: true })}
+                            {version.createdAt && formatDistanceToNow(new Date(version.createdAt), { addSuffix: true })}
                         </p>
                     </div>
                 </AccordionTrigger>
                 <AccordionContent>
                     <ScrollArea className="h-48 w-full rounded-md border bg-muted/50 p-4">
-                        <pre className="text-xs whitespace-pre-wrap font-mono">{version.systemPrompt}</pre>
+                        <pre className="text-xs whitespace-pre-wrap font-mono">{version.promptText}</pre>
                     </ScrollArea>
                 </AccordionContent>
               </AccordionItem>

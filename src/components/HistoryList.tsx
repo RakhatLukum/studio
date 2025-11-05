@@ -1,11 +1,11 @@
+
 "use client";
 
-import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
+import { useMemo } from 'react';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase';
-import type { Run } from '@/lib/types';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import type { TailoredResume } from '@/lib/types';
 import {
   Accordion,
   AccordionContent,
@@ -18,33 +18,22 @@ import { Badge } from '@/components/ui/badge';
 import MarkdownPreview from './MarkdownPreview';
 
 export default function HistoryList() {
-  const { user } = useAuth();
-  const [runs, setRuns] = useState<Run[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    if (user) {
-      const fetchRuns = async () => {
-        setLoading(true);
-        try {
-          const runsRef = collection(db, 'runs');
-          const q = query(runsRef, where('uid', '==', user.uid), orderBy('createdAt', 'desc'), limit(20));
-          const querySnapshot = await getDocs(q);
-          const userRuns = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Run));
-          setRuns(userRuns);
-        } catch (error) {
-          console.error("Error fetching history:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchRuns();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
+  const runsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'users', user.uid, 'tailoredResumes'), 
+      orderBy('createdAt', 'desc'), 
+      limit(20)
+    );
+  }, [firestore, user]);
+  
+  const { data: runs, isLoading } = useCollection<TailoredResume>(runsQuery);
 
-  if (loading) {
+
+  if (isLoading) {
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
@@ -63,7 +52,7 @@ export default function HistoryList() {
     return <p className="text-center text-muted-foreground">Please sign in to view your history.</p>;
   }
 
-  if (runs.length === 0) {
+  if (!runs || runs.length === 0) {
     return <p className="text-center text-muted-foreground">You have no saved runs yet.</p>;
   }
   
@@ -83,7 +72,7 @@ export default function HistoryList() {
                 <div className='flex-1'>
                   <p className="font-semibold text-primary truncate">{run.jobDescription.split('\n')[0]}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {run.createdAt && formatDistanceToNow(run.createdAt.toDate(), { addSuffix: true })}
+                    {run.createdAt && formatDistanceToNow(new Date(run.createdAt), { addSuffix: true })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -97,7 +86,7 @@ export default function HistoryList() {
                  <div>
                    <h4 className="font-semibold mb-2">Tailored Resume</h4>
                    <div className="p-4 border rounded-md bg-background max-h-96 overflow-y-auto">
-                    <MarkdownPreview content={run.tailoredMd} />
+                    <MarkdownPreview content={run.tailoredResumeMd} />
                    </div>
                  </div>
                  <div>

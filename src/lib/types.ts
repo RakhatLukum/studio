@@ -1,24 +1,30 @@
 
-import type { Timestamp } from 'firebase/firestore';
+import type { FieldValue } from 'firebase/firestore';
 
-export interface Run {
+export interface User {
   id: string;
-  uid: string;
+  email: string;
+  createdAt: FieldValue;
+}
+
+export interface TailoredResume {
+  id: string;
+  userId: string;
   resumeOriginal: string;
   jobDescription: string;
   language: 'en' | 'ru' | 'kz';
-  tailoredMd: string;
+  tailoredResumeMd: string;
   changeLog: string[];
   matchScore: number;
   scoreRationale: string;
   promptVersion?: string;
-  createdAt: Timestamp;
+  createdAt: string; // ISO String
 }
 
-export interface PromptVersion {
+export interface Prompt {
   id: string;
-  uid: string;
-  systemPrompt: string;
   versionLabel: string;
-  createdAt: Timestamp;
+  promptText: string;
+  createdAt: FieldValue;
+  uid?: string; // Add uid for ownership
 }

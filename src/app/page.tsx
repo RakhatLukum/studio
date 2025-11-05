@@ -1,18 +1,24 @@
+
 "use client";
 
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
+import { doc, collection, serverTimestamp } from 'firebase/firestore';
 
 import type { TailorResumeOutput } from '@/ai/flows/tailor-resume-to-job-description';
 import { tailorResume } from '@/ai/flows/tailor-resume-to-job-description';
 import ResumeForm from '@/components/ResumeForm';
 import TailorResult from '@/components/TailorResult';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore, useUser } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase';
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TailorResumeOutput | null>(null);
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useUser();
 
   const handleTailor = async (values: {
     resumeText: string;
@@ -24,6 +30,23 @@ export default function Home() {
     try {
       const tailoredResult = await tailorResume(values);
       setResult(tailoredResult);
+
+      if (user && firestore) {
+        const runsRef = collection(firestore, 'users', user.uid, 'tailoredResumes');
+        addDocumentNonBlocking(runsRef, {
+          userId: user.uid,
+          resumeOriginal: values.resumeText,
+          jobDescription: values.jobDescription,
+          language: values.language,
+          tailoredMd: tailoredResult.tailoredMd,
+          changeLog: tailoredResult.changeLog,
+          matchScore: tailoredResult.matchScore,
+          scoreRationale: tailoredResult.scoreRationale,
+          createdAt: serverTimestamp(),
+          promptVersion: 'default' // Placeholder
+        });
+      }
+
     } catch (error) {
       console.error('Error tailoring resume:', error);
       toast({
