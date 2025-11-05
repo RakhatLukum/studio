@@ -16,7 +16,7 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import MarkdownPreview from './MarkdownPreview';
-import { Bot, Briefcase, ClipboardList, FileText, Lightbulb, User } from 'lucide-react';
+import { Bot, Briefcase, ClipboardList, FileText, Lightbulb, User, FilePlus } from 'lucide-react';
 
 const ResumeHistoryItem = ({ item }: { item: Extract<HistoryItem, { type: 'resume' }> }) => (
     <>
@@ -30,6 +30,20 @@ const ResumeHistoryItem = ({ item }: { item: Extract<HistoryItem, { type: 'resum
             <FileText className="h-5 w-5 text-muted-foreground" />
             <Badge variant="outline" className={`font-mono`}>{Math.round(item.matchScore)}%</Badge>
             <Badge variant="secondary">{item.language.toUpperCase()}</Badge>
+        </div>
+    </>
+);
+
+const CreatedResumeHistoryItem = ({ item }: { item: Extract<HistoryItem, { type: 'created_resume' }> }) => (
+    <>
+        <div className='flex-1'>
+            <p className="font-semibold text-primary truncate">Created Resume: {item.formData.fullName}</p>
+            <p className="text-sm text-muted-foreground mt-1">
+                {item.createdAt && formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+            </p>
+        </div>
+        <div className="flex items-center gap-2">
+            <FilePlus className="h-5 w-5 text-muted-foreground" />
         </div>
     </>
 );
@@ -132,6 +146,10 @@ export default function HistoryList() {
                    <p className="text-sm italic p-4 border rounded-md bg-background">{item.scoreRationale}</p>
                  </div>
                </div>;
+        case 'created_resume':
+            return <div className="p-4 border rounded-md bg-background max-h-96 overflow-y-auto">
+                <MarkdownPreview content={item.generatedResumeMd} />
+            </div>;
         case 'career':
             return <div className="space-y-4">
                 {item.recommendations.map((rec, index) => (
@@ -182,6 +200,7 @@ export default function HistoryList() {
             <AccordionTrigger className="p-6 text-left hover:no-underline">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-4">
                 {item.type === 'resume' && <ResumeHistoryItem item={item} />}
+                {item.type === 'created_resume' && <CreatedResumeHistoryItem item={item} />}
                 {item.type === 'career' && <CareerHistoryItem item={item} />}
                 {item.type === 'plan' && <PlanHistoryItem item={item} />}
                 {item.type === 'interview' && <InterviewHistoryItem item={item} />}
@@ -196,3 +215,5 @@ export default function HistoryList() {
     </Accordion>
   );
 }
+
+    

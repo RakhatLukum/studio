@@ -40,6 +40,9 @@ export default function Header() {
             <Link href="/" className="transition-colors hover:text-foreground/80 text-foreground/60">
                 Tailor
             </Link>
+            <Link href="/cv-builder" className="transition-colors hover:text-foreground/80 text-foreground/60">
+                CV Builder
+            </Link>
             <Link href="/career-advisor" className="transition-colors hover:text-foreground/80 text-foreground/60">
                 Career Advisor
             </Link>
@@ -97,3 +100,5 @@ export default function Header() {
     </header>
   );
 }
+
+    

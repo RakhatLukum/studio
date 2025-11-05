@@ -28,6 +28,7 @@
       "description": "A generic container for different types of user actions saved to their history.",
       "oneOf": [
         { "$ref": "#/entities/TailoredResume" },
+        { "$ref": "#/entities/CreatedResume" },
         { "$ref": "#/entities/CareerRecommendation" },
         { "$ref": "#/entities/DevelopmentPlan" },
         { "$ref": "#/entities/InterviewSession" }
@@ -50,6 +51,19 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["type", "userId", "jobDescription", "tailoredResumeMd", "createdAt"]
+    },
+     "CreatedResume": {
+      "title": "CreatedResume",
+      "type": "object",
+      "description": "Represents a resume created from scratch.",
+      "properties": {
+        "type": { "type": "string", "const": "created_resume" },
+        "userId": { "type": "string" },
+        "formData": { "type": "object" },
+        "generatedResumeMd": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "userId", "formData", "generatedResumeMd", "createdAt"]
     },
     "CareerRecommendation": {
       "title": "CareerRecommendation",
@@ -129,3 +143,5 @@
     }
   }
 }
+
+    

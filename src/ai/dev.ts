@@ -11,3 +11,6 @@ import '@/ai/flows/create-development-plan-flow.ts';
 import '@/ai/flows/find-local-opportunities-flow.ts';
 import '@/ai/flows/practice-interview-flow.ts';
 import '@/ai/flows/summarize-interview-flow.ts';
+import '@/ai/flows/create-resume-flow.ts';
+
+    
