@@ -12,10 +12,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 type PromptVersionListProps = {
-    key?: number;
+    refreshKey?: number;
 }
 
-export default function PromptVersionList({ key }: PromptVersionListProps) {
+export default function PromptVersionList({ refreshKey }: PromptVersionListProps) {
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -27,7 +27,7 @@ export default function PromptVersionList({ key }: PromptVersionListProps) {
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [firestore, user, key]);
+  }, [firestore, user, refreshKey]);
 
   const { data: versions, isLoading } = useCollection<Prompt>(promptsQuery);
   

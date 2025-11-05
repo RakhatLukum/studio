@@ -40,7 +40,7 @@ export default function PromptLabPage() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         <PromptLabForm onPromptSaved={() => setRefreshKey(prev => prev + 1)} />
-        <PromptVersionList key={refreshKey} />
+        <PromptVersionList refreshKey={refreshKey} />
       </div>
     </div>
   );
