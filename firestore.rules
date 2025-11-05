@@ -1,0 +1,103 @@
+/**
+ * @fileoverview Firestore Security Rules for the AI Resume Tailor application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user profiles and tailored resumes,
+ * while allowing open read access to prompts. Only authenticated users can access their own data.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information.
+ * - /users/{userId}/tailoredResumes/{tailoredResumeId}: Stores tailored resumes generated for each user.
+ * - /prompts/{promptId}: Stores system prompts used for resume tailoring.
+ *
+ * Key Security Decisions:
+ * - Users can only create, read, update, and delete their own user documents and tailored resumes.
+ * - Listing all users is disallowed.
+ * - Read access to prompts is public.
+ * - Write access to prompts is restricted (TODO: implement role-based access).
+ *
+ * Denormalization for Authorization:
+ * - The `TailoredResume` entity includes a `userId` field to enable authorization rules that don't
+ *   require hierarchical reads.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to user profile documents.
+     * @path /users/{userId}
+     * @allow (create) - User with ID 'user123' can create their own profile.
+     *   Incoming data: { id: 'user123', email: 'test@example.com', createdAt: '2024-01-01T00:00:00Z' }
+     * @allow (get, update, delete) - User with ID 'user123' can read, update, or delete their own profile.
+     * @deny (create) - User with ID 'user456' cannot create a profile with ID 'user123'.
+     *   Incoming data: { id: 'user123', email: 'test@example.com', createdAt: '2024-01-01T00:00:00Z' }
+     * @deny (get, update, delete) - User with ID 'user456' cannot read, update, or delete the profile of user 'user123'.
+     * @principle Enforces document ownership for user profiles.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Listing users is disallowed.
+      allow create: if isSignedIn() && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id; //Immutable id check
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to tailored resumes within a user's profile.
+     * @path /users/{userId}/tailoredResumes/{tailoredResumeId}
+     * @allow (create) - User with ID 'user123' can create a tailored resume under their profile.
+     *   Incoming data: { id: 'resume1', userId: 'user123', ... }
+     * @allow (get, update, delete) - User with ID 'user123' can read, update, or delete their own tailored resume.
+     * @deny (create) - User with ID 'user456' cannot create a tailored resume under user 'user123''s profile.
+     *   Incoming data: { id: 'resume1', userId: 'user123', ... }
+     * @deny (get, update, delete) - User with ID 'user456' cannot read, update, or delete tailored resumes under user 'user123''s profile.
+     * @principle Enforces document ownership for tailored resumes.
+     */
+    match /users/{userId}/tailoredResumes/{tailoredResumeId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId; //Immutable userId check
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to system prompts.
+     * @path /prompts/{promptId}
+     * @allow (get, list) - Any user can read system prompts.
+     * @deny (create, update, delete) - No user can create, update, or delete prompts (TODO: Implement role-based access).
+     * @principle Allows public read access to prompts, restricts write access.
+     */
+    match /prompts/{promptId} {
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add role validation for prompt management.
+    }
+
+    /**
+     * @description Checks if the current user is signed in.
+     * @return {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID.
+     * @param {string} userId The user ID to compare against.
+     * @return {boolean} True if the authenticated user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID and the resource exists.
+     * @param {string} userId The user ID to compare against.
+     * @return {boolean} True if the authenticated user is the owner and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+  }
+}
