@@ -58,8 +58,11 @@ service cloud.firestore {
     // Path: /prompts/{promptId}
     // Schema: Prompt
     match /prompts/{promptId} {
-      // READ, LIST: A user can read/list prompts they own.
-      allow get, list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      // READ: A user can read a prompt if they are the owner.
+      allow get: if isSignedIn() && resource.data.uid == request.auth.uid;
+
+      // LIST: A user can list prompts if they are querying by their own user ID.
+      allow list: if isSignedIn() && request.query.where.uid == request.auth.uid;
       
       // CREATE: A user can create a prompt and must be the owner.
       allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
