@@ -38,8 +38,8 @@ const CreateResumeInputSchema = z.object({
   linkedin: z.string().optional(),
   professionalSummary: z.string(),
   skills: z.array(z.string()),
-  experience: z.array(ExperienceSchema),
-  education: z.array(EducationSchema),
+  experience: z.array(ExperienceSchema).optional(),
+  education: z.array(EducationSchema).optional(),
   projects: z.array(ProjectSchema).optional(),
 });
 export type CreateResumeInput = z.infer<typeof CreateResumeInputSchema>;
@@ -63,8 +63,8 @@ Follow this structure precisely:
 1.  **Contact Information:** At the very top, list the Full Name as a main heading (#), followed by Email, Phone, and LinkedIn profile URL on separate lines.
 2.  **Summary:** A section titled "## Summary" containing the professional summary.
 3.  **Skills:** A section titled "## Skills" containing a comma-separated list of skills.
-4.  **Experience:** A section titled "## Experience". For each job, create a sub-heading (###) with the Job Title and Company. On the next line, list the dates. Below that, use bullet points for each item in the description.
-5.  **Education:** A section titled "## Education". For each entry, create a sub-heading (###) with the Degree and School. On the next line, list the dates.
+4.  **Experience:** (Only if provided) A section titled "## Experience". For each job, create a sub-heading (###) with the Job Title and Company. On the next line, list the dates. Below that, use bullet points for each item in the description.
+5.  **Education:** (Only if provided) A section titled "## Education". For each entry, create a sub-heading (###) with the Degree and School. On the next line, list the dates.
 6.  **Projects:** (Only if provided) A section titled "## Projects". For each project, create a sub-heading (###) with the Project Name. Below that, use bullet points for the description and include the URL if available.
 
 Ensure the final output is a single Markdown string.
@@ -111,5 +111,3 @@ const createResumeFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    

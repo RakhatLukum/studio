@@ -43,8 +43,8 @@ const cvBuilderSchema = z.object({
   linkedin: z.string().optional(),
   professionalSummary: z.string().min(10, "Summary must be at least 10 characters"),
   skills: z.string().min(1, "Please list at least one skill"),
-  experience: z.array(experienceSchema),
-  education: z.array(educationSchema),
+  experience: z.array(experienceSchema).optional(),
+  education: z.array(educationSchema).optional(),
   projects: z.array(projectSchema).optional(),
 });
 
@@ -66,8 +66,8 @@ export default function CvBuilderPage() {
       linkedin: '',
       professionalSummary: '',
       skills: '',
-      experience: [{ jobTitle: '', company: '', dates: '', description: '' }],
-      education: [{ degree: '', school: '', dates: '' }],
+      experience: [],
+      education: [],
       projects: [],
     },
   });
@@ -93,7 +93,9 @@ export default function CvBuilderPage() {
     try {
       const resumeResult = await createResume({
         ...values,
-        skills: values.skills.split(',').map(s => s.trim())
+        skills: values.skills.split(',').map(s => s.trim()),
+        experience: values.experience || [],
+        education: values.education || [],
       });
       setResult(resumeResult);
 
@@ -171,7 +173,7 @@ export default function CvBuilderPage() {
 
                 {/* Experience */}
                 <div className="space-y-4 p-4 border rounded-lg">
-                  <h3 className="font-semibold text-lg">Work Experience</h3>
+                  <h3 className="font-semibold text-lg">Work Experience (Optional)</h3>
                   {experienceFields.map((field, index) => (
                     <div key={field.id} className="space-y-4 p-4 border rounded-md relative">
                       <FormField control={form.control} name={`experience.${index}.jobTitle`} render={({ field }) => (
@@ -194,7 +196,7 @@ export default function CvBuilderPage() {
 
                 {/* Education */}
                 <div className="space-y-4 p-4 border rounded-lg">
-                  <h3 className="font-semibold text-lg">Education</h3>
+                  <h3 className="font-semibold text-lg">Education (Optional)</h3>
                   {educationFields.map((field, index) => (
                     <div key={field.id} className="space-y-4 p-4 border rounded-md relative">
                         <FormField control={form.control} name={`education.${index}.degree`} render={({ field }) => (
@@ -214,7 +216,7 @@ export default function CvBuilderPage() {
                 
                 {/* Projects */}
                 <div className="space-y-4 p-4 border rounded-lg">
-                  <h3 className="font-semibold text-lg">Projects</h3>
+                  <h3 className="font-semibold text-lg">Projects (Optional)</h3>
                   {projectFields.map((field, index) => (
                     <div key={field.id} className="space-y-4 p-4 border rounded-md relative">
                         <FormField control={form.control} name={`projects.${index}.name`} render={({ field }) => (
@@ -264,5 +266,3 @@ export default function CvBuilderPage() {
     </div>
   );
 }
-
-    
