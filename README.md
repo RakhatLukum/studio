@@ -1,5 +1,3 @@
-# Firebase Studio
+# MansUP
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+AI-driven Web app that helps young specialist start their career
